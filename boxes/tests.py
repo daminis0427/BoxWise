@@ -2,6 +2,7 @@
 from decimal import Decimal
 
 from django.test import TestCase
+from django.urls import reverse
 
 from .models import Product, ShippingBox, Order, OrderItem
 from .services import (
@@ -256,3 +257,101 @@ class BoxWiseRecommendationTests(TestCase):
         self.assertEqual(result["suitable_boxes"], [])
         self.assertIsNone(result["potential_savings"])
         self.assertIsNone(result["savings_percentage"])
+
+
+
+class BoxWiseViewTests(TestCase):
+
+    def setUp(self):
+        self.product = Product.objects.create(
+            name="Keyboard",
+            length=3,
+            width=2,
+            height=1,
+            weight=1,
+        )
+
+        self.order = Order.objects.create()
+
+        OrderItem.objects.create(
+            order=self.order,
+            product=self.product,
+            quantity=1,
+        )
+
+        self.box = ShippingBox.objects.create(
+            name="Standard Box",
+            length=10,
+            width=10,
+            height=10,
+            max_weight=10,
+            cost=Decimal("50.00"),
+        )
+
+    def test_home_page_loads(self):
+        response = self.client.get(
+            reverse("boxes:home")
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "boxes/home.html")
+
+    def test_home_page_displays_orders(self):
+        response = self.client.get(
+            reverse("boxes:home")
+        )
+
+        self.assertContains(response, f"Order #{self.order.pk}")
+
+    def test_recommendation_page_loads(self):
+        response = self.client.get(
+            reverse(
+                "boxes:recommendation",
+                args=[self.order.pk],
+            )
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(
+            response,
+            "boxes/recommendation.html",
+        )
+
+    def test_recommendation_page_displays_recommended_box(self):
+        response = self.client.get(
+            reverse(
+                "boxes:recommendation",
+                args=[self.order.pk],
+            )
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            response.context["recommended_box"],
+            self.box,
+        )
+
+    def test_recommendation_page_returns_404_for_missing_order(self):
+        response = self.client.get(
+            reverse(
+                "boxes:recommendation",
+                args=[99999],
+            )
+        )
+
+        self.assertEqual(response.status_code, 404)
+
+    def test_recommendation_page_calculates_packing_metrics(self):
+        response = self.client.get(
+            reverse(
+                "boxes:recommendation",
+                args=[self.order.pk],
+            )
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context["total_weight"], 1)
+        self.assertEqual(response.context["total_product_volume"], 6)
+        self.assertEqual(response.context["box_volume"], 1000)
+        self.assertEqual(response.context["unused_volume"], 994)
+        self.assertEqual(response.context["utilization"], 0.6)
