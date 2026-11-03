@@ -1,0 +1,723 @@
+
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Box Recommendation | BoxWise</title>
+
+    <link rel="stylesheet" href="{% static 'boxes/style.css' %}">
+</head>
+
+<body>
+
+<header class="navbar">
+    <div class="logo">BoxWise</div>
+    <a href="{% url 'boxes:home' %}" class="nav-link">Dashboard</a>
+</header>
+
+
+<main class="recommendation-container">
+
+    <!-- Page Heading -->
+    <section class="recommendation-heading">
+        <p class="eyebrow">SMART PACKAGING SOLUTION</p>
+        <h1>Box Recommendation</h1>
+        <p>Here is the packaging recommendation for your order.</p>
+    </section>
+
+
+    <!-- Order Summary -->
+    <section class="order-summary card">
+
+        <h2>Order #{{ order.id }}</h2>
+
+        <h3>Products in this order</h3>
+
+        <ul>
+            {% for item in order.orderitem_set.all %}
+                <li>
+                    {{ item.product.name }}
+                    <span>× {{ item.quantity }}</span>
+                </li>
+            {% empty %}
+                <li>No products found in this order.</li>
+            {% endfor %}
+        </ul>
+
+    </section>
+
+
+    {% if recommended_box %}
+
+
+    <!-- COST OPTIMIZATION -->
+    <section class="cost-optimization card">
+
+        <div class="section-heading">
+            <div>
+                <p class="eyebrow">SMART PACKAGING</p>
+                <h2>Cost Optimization</h2>
+                <p>Compare suitable boxes and discover your savings.</p>
+            </div>
+
+            <div class="optimization-icon">₹</div>
+        </div>
+
+
+        <div class="cost-highlight">
+
+            <div>
+                <span class="highlight-label">RECOMMENDED BOX</span>
+
+                <h3>{{ recommended_box.name }}</h3>
+
+                <p>Lowest cost among suitable boxes</p>
+            </div>
+
+            <div class="recommended-price">
+                <span>Box Cost</span>
+
+                <strong>
+                    ₹{{ recommended_box.cost|floatformat:2 }}
+                </strong>
+            </div>
+
+        </div>
+
+
+        <div class="cost-stats">
+
+            <div class="cost-stat">
+                <span>Recommended Cost</span>
+
+                <strong>
+                    ₹{{ recommended_box.cost|floatformat:2 }}
+                </strong>
+            </div>
+
+
+            <div class="cost-stat">
+                <span>Highest Suitable Cost</span>
+
+                <strong>
+                    {% if most_expensive_cost != None %}
+                        ₹{{ most_expensive_cost|floatformat:2 }}
+                    {% else %}
+                        —
+                    {% endif %}
+                </strong>
+            </div>
+
+
+            <div class="cost-stat savings-stat">
+                <span>Potential Savings</span>
+
+                <strong>
+                    ₹{{ potential_savings|floatformat:2 }}
+                </strong>
+
+                <small>{{ savings_percentage }}% savings</small>
+            </div>
+
+        </div>
+
+
+        <!-- Suitable Boxes -->
+        <div class="suitable-boxes">
+
+            <div class="comparison-heading">
+                <h3>Suitable Box Comparison</h3>
+
+                <span>
+                    {{ suitable_boxes|length }} boxes found
+                </span>
+            </div>
+
+
+            <div class="comparison-table-wrapper">
+
+                <table class="comparison-table">
+
+                    <thead>
+                        <tr>
+                            <th>Box Name</th>
+                            <th>Cost</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+
+
+                    <tbody>
+
+                        {% for box in suitable_boxes %}
+
+                        <tr>
+                            <td>{{ box.name }}</td>
+
+                            <td>
+                                ₹{{ box.cost|floatformat:2 }}
+                            </td>
+
+                            <td>
+                                {% if box.id == recommended_box.id %}
+
+                                    <span class="recommended-label">
+                                        Recommended
+                                    </span>
+
+                                {% else %}
+
+                                    <span class="alternative-label">
+                                        Alternative
+                                    </span>
+
+                                {% endif %}
+                            </td>
+                        </tr>
+
+                        {% endfor %}
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+        </div>
+
+    </section>
+
+
+
+    <!-- 3D BOX VISUALIZATION -->
+    <section class="visualization-section card">
+
+        <div class="section-heading">
+
+            <div>
+                <p class="eyebrow">INTERACTIVE PACKING VIEW</p>
+
+                <h2>3D Box Visualization</h2>
+
+                <p>
+                    Explore how your products are arranged inside the box.
+                </p>
+            </div>
+
+            <div class="optimization-icon">📦</div>
+
+        </div>
+
+
+        <div id="box-3d-container" class="box-3d-container"></div>
+
+
+        <div class="visualization-help">
+    <span>🖱️ Drag to rotate</span>
+    <span>🔍 Scroll to zoom</span>
+</div>
+
+<!-- Product Legend -->
+<div class="product-legend">
+
+    <div class="legend-heading">
+        <h3>Products Inside the Box</h3>
+        <span>{{ placements|length }} items</span>
+    </div>
+
+    <div class="legend-grid">
+
+        {% for product in placements %}
+
+        <div class="legend-item">
+
+            <span
+                class="legend-color"
+                style="--legend-color: {{ product.color }};"
+            ></span>
+
+            <div class="legend-info">
+                <strong>{{ product.name }}</strong>
+
+                <small>
+                    {{ product.length }} ×
+                    {{ product.width }} ×
+                    {{ product.height }}
+                </small>
+            </div>
+
+        </div>
+
+        {% endfor %}
+
+    </div>
+
+</div>
+
+
+        {{ placements|json_script:"packing-data" }}
+
+
+        <div class="visualization-details">
+
+            <p>
+                <strong>Selected Box:</strong>
+                {{ recommended_box.name }}
+            </p>
+
+            <p>
+                <strong>Products Visualized:</strong>
+                {{ placements|length }}
+            </p>
+
+        </div>
+
+    </section>
+
+
+
+    <!-- PACKING ANALYSIS -->
+    <section class="packing-analysis card">
+
+        <p class="eyebrow">PACKING INSIGHTS</p>
+
+        <h2>Packaging Analysis</h2>
+
+
+        <div class="analysis-grid">
+
+            <div class="analysis-item">
+                <span>Total Product Weight</span>
+                <strong>{{ total_weight }} kg</strong>
+            </div>
+
+
+            <div class="analysis-item">
+                <span>Total Product Volume</span>
+                <strong>{{ total_product_volume }}</strong>
+            </div>
+
+
+            <div class="analysis-item">
+                <span>Selected Box Volume</span>
+                <strong>{{ box_volume }}</strong>
+            </div>
+
+
+            <div class="analysis-item">
+                <span>Unused Box Volume</span>
+                <strong>{{ unused_volume }}</strong>
+            </div>
+
+        </div>
+
+
+        <!-- Volume Utilization -->
+        <div class="utilization-section">
+
+            <div class="utilization-header">
+                <span>Estimated Volume Utilization</span>
+
+                <strong>{{ utilization }}%</strong>
+            </div>
+
+
+            <div
+                class="progress-track"
+                role="progressbar"
+                aria-label="Estimated volume utilization"
+                aria-valuemin="0"
+                aria-valuemax="100"
+                aria-valuenow="{{ utilization }}"
+            >
+
+                <div
+                    class="progress-fill"
+                    style="--progress-width: {{ utilization }}%;"
+                ></div>
+
+            </div>
+
+
+            <p>
+                This percentage compares the combined product volume
+                with the selected box volume. Actual packing efficiency
+                may differ because of product shapes, orientation,
+                and arrangement.
+            </p>
+
+        </div>
+
+    </section>
+
+
+    {% else %}
+
+
+    <!-- NO SUITABLE BOX -->
+    <section class="no-box card">
+
+        <h2>No Suitable Box Found</h2>
+
+        <p>
+            Unfortunately, none of the available shipping boxes
+            can accommodate all products in this order.
+        </p>
+
+        <p>
+            Please add a larger box or review the product dimensions
+            and weight.
+        </p>
+
+    </section>
+
+
+    {% endif %}
+
+
+    <!-- Back Button -->
+    <a href="{% url 'boxes:home' %}" class="back-button">
+        &larr; Back to Dashboard
+    </a>
+
+</main>
+
+
+<footer class="footer">
+    <p>© 2026 BoxWise | Smart Packaging & Cost Optimization</p>
+</footer>
+
+
+<!-- THREE.JS VISUALIZATION -->
+{% if recommended_box %}
+
+<script type="module">
+
+import * as THREE from
+    "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js";
+
+
+const container = document.getElementById("box-3d-container");
+
+if (container) {
+
+    const boxLength = Number("{{ recommended_box.length }}");
+    const boxWidth = Number("{{ recommended_box.width }}");
+    const boxHeight = Number("{{ recommended_box.height }}");
+
+    const placements = JSON.parse(
+        document.getElementById("packing-data").textContent
+    );
+
+
+    if (
+        boxLength > 0 &&
+        boxWidth > 0 &&
+        boxHeight > 0
+    ) {
+
+        const scene = new THREE.Scene();
+
+        scene.background = new THREE.Color("#f8fafc");
+
+
+        const camera = new THREE.PerspectiveCamera(
+            45,
+            container.clientWidth / 420,
+            0.1,
+            10000
+        );
+
+
+        const renderer = new THREE.WebGLRenderer({
+            antialias: true
+        });
+
+        renderer.setPixelRatio(
+            Math.min(window.devicePixelRatio, 2)
+        );
+
+        renderer.setSize(
+            container.clientWidth,
+            420
+        );
+
+        container.appendChild(renderer.domElement);
+
+
+        // Lighting
+        scene.add(
+            new THREE.AmbientLight(0xffffff, 1.5)
+        );
+
+        const light = new THREE.DirectionalLight(
+            0xffffff,
+            2
+        );
+
+        light.position.set(100, 150, 100);
+
+        scene.add(light);
+
+
+        // Box dimensions and center
+        const centerX = boxLength / 2;
+        const centerY = boxHeight / 2;
+        const centerZ = boxWidth / 2;
+
+
+        // Outer box
+        const boxGeometry = new THREE.BoxGeometry(
+            boxLength,
+            boxHeight,
+            boxWidth
+        );
+
+
+        const boxMaterial = new THREE.MeshBasicMaterial({
+            color: "#94a3b8",
+            transparent: true,
+            opacity: 0.08,
+            side: THREE.DoubleSide
+        });
+
+
+        const outerBox = new THREE.Mesh(
+            boxGeometry,
+            boxMaterial
+        );
+
+        scene.add(outerBox);
+
+
+        // Box edges
+        const edges = new THREE.EdgesGeometry(
+            boxGeometry
+        );
+
+        const outline = new THREE.LineSegments(
+            edges,
+            new THREE.LineBasicMaterial({
+                color: "#334155"
+            })
+        );
+
+        scene.add(outline);
+
+
+        // Product colors
+        const colors = placements.map(
+    product => product.color
+);
+
+
+        // Draw products
+        placements.forEach((product, index) => {
+
+            const geometry = new THREE.BoxGeometry(
+                product.length,
+                product.height,
+                product.width
+            );
+
+
+            const material = new THREE.MeshStandardMaterial({
+    color: colors[index],
+    roughness: 0.65,
+    metalness: 0.05
+});
+
+
+            const mesh = new THREE.Mesh(
+                geometry,
+                material
+            );
+
+
+            mesh.position.set(
+                product.x + product.length / 2 - centerX,
+                product.z + product.height / 2 - centerY,
+                product.y + product.width / 2 - centerZ
+            );
+
+            scene.add(mesh);
+
+
+            // Product borders
+            const productEdges = new THREE.LineSegments(
+                new THREE.EdgesGeometry(geometry),
+                new THREE.LineBasicMaterial({
+                    color: "#334155"
+                })
+            );
+
+            productEdges.position.copy(mesh.position);
+
+            scene.add(productEdges);
+
+        });
+
+
+        // Camera settings
+        const largestDimension = Math.max(
+            boxLength,
+            boxWidth,
+            boxHeight,
+            1
+        );
+
+
+        let rotationY = 0.6;
+        let rotationX = 0.4;
+        let zoom = 1;
+
+        let isDragging = false;
+
+        let previousX = 0;
+        let previousY = 0;
+
+
+        // Rotate the camera
+        function updateCamera() {
+
+            const radius = largestDimension * 3 * zoom;
+
+            camera.position.set(
+                radius * Math.sin(rotationY) * Math.cos(rotationX),
+                radius * Math.sin(rotationX),
+                radius * Math.cos(rotationY) * Math.cos(rotationX)
+            );
+
+            camera.lookAt(0, 0, 0);
+
+        }
+
+
+        container.addEventListener(
+            "pointerdown",
+            (event) => {
+
+                isDragging = true;
+
+                previousX = event.clientX;
+                previousY = event.clientY;
+
+                container.setPointerCapture(event.pointerId);
+
+            }
+        );
+
+
+        container.addEventListener(
+            "pointermove",
+            (event) => {
+
+                if (!isDragging) return;
+
+                rotationY += (
+                    event.clientX - previousX
+                ) * 0.01;
+
+                rotationX += (
+                    event.clientY - previousY
+                ) * 0.01;
+
+                rotationX = Math.max(
+                    -1.2,
+                    Math.min(1.2, rotationX)
+                );
+
+                previousX = event.clientX;
+                previousY = event.clientY;
+
+                updateCamera();
+
+            }
+        );
+
+
+        container.addEventListener(
+            "pointerup",
+            () => {
+                isDragging = false;
+            }
+        );
+
+
+        container.addEventListener(
+            "pointercancel",
+            () => {
+                isDragging = false;
+            }
+        );
+
+
+        // Zoom using mouse wheel
+        container.addEventListener(
+            "wheel",
+            (event) => {
+
+                event.preventDefault();
+
+                zoom *= event.deltaY > 0 ? 1.1 : 0.9;
+
+                zoom = Math.max(
+                    0.5,
+                    Math.min(3, zoom)
+                );
+
+                updateCamera();
+
+            },
+            { passive: false }
+        );
+
+
+        // Initial camera position
+        updateCamera();
+
+
+        // Animation
+        function animate() {
+
+            requestAnimationFrame(animate);
+
+            renderer.render(scene, camera);
+
+        }
+
+        animate();
+
+
+        // Responsive view
+        window.addEventListener(
+            "resize",
+            () => {
+
+                const width = container.clientWidth;
+
+                if (!width) return;
+
+                camera.aspect = width / 420;
+
+                camera.updateProjectionMatrix();
+
+                renderer.setSize(width, 420);
+
+            }
+        );
+
+    }
+
+}
+
+</script>
+
+{% endif %}
+
+
+</body>
+</html>

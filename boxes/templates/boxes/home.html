@@ -1,0 +1,108 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>BoxWise | Smart Box Selection</title>
+
+    <link rel="stylesheet" href="{% static 'boxes/style.css' %}">
+</head>
+
+<body>
+
+<header class="navbar">
+    <div class="nav-container">
+        <a href="{% url 'boxes:home' %}" class="brand">
+            📦 BoxWise
+        </a>
+        <a href="/admin/" class="admin-link">Admin Dashboard ↗</a>
+    </div>
+</header>
+
+<main class="container">
+
+    <section class="hero">
+        <span class="eyebrow">SMART PACKAGING SOLUTION</span>
+        <h1>AI-Assisted Box Selection System</h1>
+        <p>
+            Find the most suitable shipping box for your order
+            while optimizing packaging costs.
+        </p>
+    </section>
+
+    <div class="section-heading">
+        <div>
+            <h2>Your Orders</h2>
+            <p>Manage and find suitable packaging for your shipments.</p>
+        </div>
+        <a href="/admin/boxes/order/add/" class="outline-btn">
+            + Create Order
+        </a>
+    </div>
+
+    <div class="orders-grid">
+
+        {% for order in orders %}
+
+        <section class="order-card">
+
+            <div class="order-top">
+                <span class="order-label">ORDER SUMMARY</span>
+                <span class="order-number">#{{ order.id }}</span>
+            </div>
+
+            <h3>Order #{{ order.id }}</h3>
+
+            <p class="muted">Products included in your shipment</p>
+
+            <ul class="product-list">
+                {% for item in order.orderitem_set.all %}
+                    <li>
+                        <span>{{ item.product.name }}</span>
+                        <strong>× {{ item.quantity }}</strong>
+                    </li>
+                {% empty %}
+                    <li>No products added to this order.</li>
+                {% endfor %}
+            </ul>
+
+            <div class="card-footer">
+                <span class="status">
+                    <span class="status-dot"></span>
+                    Ready for packaging
+                </span>
+
+                <a class="primary-btn"
+                   href="{% url 'boxes:recommendation' order.id %}">
+                    Find Best Box →
+                </a>
+            </div>
+
+        </section>
+
+        {% empty %}
+
+        <div class="empty-state">
+            <div class="empty-icon">📦</div>
+            <h3>No Orders Available</h3>
+            <p>Create your first order using the admin dashboard.</p>
+            <a href="/admin/boxes/order/add/" class="primary-btn">
+                Create First Order
+            </a>
+        </div>
+
+        {% endfor %}
+
+    </div>
+
+</main>
+
+<footer>
+    <p>BoxWise — Smart Packaging & Cost Optimization</p>
+</footer>
+
+</body>
+</html>
